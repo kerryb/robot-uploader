@@ -13,16 +13,17 @@ configure do
 end
 
 helpers do
-  def robot_name
-    session[:robot_name] || "Guest"
+  def team_name
+    session[:team_name] || "Guest"
   end
 
   def logged_in?
-    session.has_key? :robot_name
+    session.has_key? :team_name
   end
 end
 
 get "/" do
+  @teams = []
   erb :leader_board
 end
 
@@ -32,8 +33,9 @@ get "/new" do
 end
 
 post "/new" do
-  FileUtils.mkdir_p File.join(settings.root, "robots")
-  FileUtils.mv params[:data][:tempfile].path, File.join(settings.root, "robots", "#{session[:robot_name]}.jar")
+  require_login
+  FileUtils.mkdir_p File.join(settings.root, "teams")
+  FileUtils.mv params[:data][:tempfile].path, File.join(settings.root, "teams", "#{session[:team_name]}.jar")
   flash[:notice] = "Robot uploaded"
   redirect to "/"
 end
@@ -43,54 +45,53 @@ get "/login" do
 end
 
 post "/login" do
-  robot_name, password = params.values_at("robot_name", "password")
-  if robot_exists? robot_name
-    log_in_as robot_name, password
+  team_name, password = params.values_at("team_name", "password")
+  if team_exists? team_name
+    log_in_as team_name, password
   else
-    create_robot robot_name, password
+    create_team team_name, password
   end
-  session[:robot_name] = robot_name
-  where_user_came_from = session[:previous_url] || "/"
+  session[:team_name] = team_name
   flash[:notice] = "Logged in"
-  redirect to where_user_came_from 
+  redirect to session[:previous_url] || "/"
 end
 
 get "/logout" do
-  session.delete(:robot_name)
+  session.delete(:team_name)
   flash[:notice] = "Logged out"
   redirect to "/"
 end
 
 def require_login
-  if !session[:robot_name] then
+  if !session[:team_name] then
     session[:previous_url] = request["REQUEST_PATH"]
     flash.now[:error] = "Please log in"
     halt erb(:login_form)
   end
 end
 
-def robot_exists? name
-  File.exists? File.join(settings.root, "auth", filename_for_robot(name))
+def team_exists? name
+  File.exists? File.join(settings.root, "auth", filename_for_team(name))
 end
 
-def create_robot name, password
+def create_team name, password
   FileUtils.mkdir_p File.join(settings.root, "auth")
   salt = BCrypt::Engine.generate_salt
   encrypted_password = BCrypt::Engine.hash_secret(password, salt)
-  File.open File.join(settings.root, "auth", filename_for_robot(name)), "w" do |f|
+  File.open File.join(settings.root, "auth", filename_for_team(name)), "w" do |f|
     f.puts salt
     f.puts encrypted_password
   end
 end
 
 def log_in_as name, password
-  salt, encrypted_password = File.read(File.join(settings.root, "auth", filename_for_robot(name))).lines.map &:chomp
+  salt, encrypted_password = File.read(File.join(settings.root, "auth", filename_for_team(name))).lines.map &:chomp
   unless encrypted_password == BCrypt::Engine.hash_secret(password, salt)
-    flash.now[:error] = "Incorrect password, or you're trying to create a robot with a name that already exists."
+    flash.now[:error] = "Incorrect password, or you're trying to create a team with a name that already exists."
     halt erb(:login_form)
   end
 end
 
-def filename_for_robot name
+def filename_for_team name
   name.gsub /[^\w]+/, "-"
 end

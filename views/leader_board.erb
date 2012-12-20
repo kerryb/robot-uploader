@@ -1,1 +1,12 @@
-TODO
+<table class="table table-striped">
+  <tr>
+    <th>Team</th>
+    <th>Robot</th>
+  </tr>
+  <% @teams.each do |team| %>
+    <tr>
+      <td>team.name</td>
+      <td>team.robot</td>
+    </tr>
+  <% end %>
+</table>
