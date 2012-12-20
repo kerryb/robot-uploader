@@ -10,6 +10,6 @@ Instructions
 
     cd robot-uploader
     bundle install
-    ruby app.rb
+    shotgun app.rb
 
-Then open [http://localhost:4567/](http://localhost:4567/)
+Then open [http://localhost:9393/](http://localhost:9393/)
