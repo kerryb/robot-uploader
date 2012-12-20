@@ -13,3 +13,5 @@ Instructions
     shotgun app.rb
 
 Then open [http://localhost:9393/](http://localhost:9393/)
+
+Encrypted passwords are stored in `auth`, with one file per account.
