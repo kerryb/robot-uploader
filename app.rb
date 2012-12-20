@@ -1,7 +1,7 @@
 # dev hint: shotgun login.rb
 
-require 'rubygems'
-require 'sinatra'
+require "rubygems"
+require "sinatra"
 
 configure do
   set :public_folder, Proc.new { File.join(root, "static") }
@@ -9,39 +9,43 @@ configure do
 end
 
 helpers do
-  def username
-    session[:identity] ? session[:identity] : 'Hello stranger'
+  def robot_name
+    session[:robot_name] || "Guest"
+  end
+
+  def logged_in?
+    session.has_key? :robot_name
   end
 end
 
-before '/secure/*' do
-  if !session[:identity] then
-    session[:previous_url] = request['REQUEST_PATH']
-    @error = 'Sorry guacamole, you need to be logged in to do that'
+def require_login
+  if !session[:robot_name] then
+    session[:previous_url] = request["REQUEST_PATH"]
+    @error = "Sorry, you need to be logged in to do that"
     halt erb(:login_form)
   end
 end
 
-get '/' do
-  erb 'Can you handle a <a href="/secure/place">secret</a>?'
+get "/" do
+  erb :leader_board
 end
 
-get '/login/form' do 
+get "/new" do
+  require_login
+  erb :upload
+end
+
+get "/login/form" do 
   erb :login_form
 end
 
-post '/login/attempt' do
-  session[:identity] = params['username']
-  where_user_came_from = session[:previous_url] || '/'
+post "/login/attempt" do
+  session[:robot_name] = params["robot_name"]
+  where_user_came_from = session[:previous_url] || "/"
   redirect to where_user_came_from 
 end
 
-get '/logout' do
-  session.delete(:identity)
-  erb "<div class='alert alert-message'>Logged out</div>"
-end
-
-
-get '/secure/place' do
-  erb "This is a secret place that only <%=session[:identity]%> has access to!"
+get "/logout" do
+  session.delete(:robot_name)
+  erb %{<div class="alert alert-message">Logged out</div>}
 end
