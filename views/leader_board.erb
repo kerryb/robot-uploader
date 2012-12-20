@@ -5,7 +5,12 @@
   </tr>
   <% @teams.each do |team| %>
     <tr>
-      <td><%= team.name %></td>
+      <td>
+        <% if team.name == team_name %>
+          <i class="icon-star"></i>
+        <% end %>
+        <%= team.name %>
+      </td>
       <td><%= team.robot_name %></td>
     </tr>
   <% end %>
