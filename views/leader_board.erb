@@ -1,17 +1,21 @@
 <table class="table table-striped">
-  <tr>
-    <th>Team</th>
-    <th>Robot</th>
-  </tr>
-  <% @teams.each do |team| %>
+  <% if @teams.empty? %>
+    <p class="lead">Waiting for teams!</p>
+  <% else %>
     <tr>
-      <td>
-        <% if team.name == team_name %>
-          <i class="icon-star"></i>
-        <% end %>
-        <%= team.name %>
-      </td>
-      <td><%= team.robot_name %></td>
+      <th>Team</th>
+      <th>Robot</th>
     </tr>
+    <% @teams.each do |team| %>
+      <tr>
+        <td>
+          <% if team.name == team_name %>
+            <i class="icon-star"></i>
+          <% end %>
+          <%= team.name %>
+        </td>
+        <td><%= team.robot_name %></td>
+      </tr>
+    <% end %>
   <% end %>
 </table>
