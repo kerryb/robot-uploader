@@ -1,4 +1,4 @@
-BT Robocode battle 2012 robot uploader
+BT Robocode Battle 2012 robot uploader
 ====
 
 Based on [sinatra-bootstrap](https://github.com/pokle/sinatra-bootstrap).
