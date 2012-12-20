@@ -20,7 +20,7 @@ FileUtils.mkdir_p File.join(settings.root, "teams")
 
 helpers do
   def team_name
-    session[:team_name] || "Guest"
+    session[:team_name]
   end
 
   def logged_in?
