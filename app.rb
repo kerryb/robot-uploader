@@ -56,7 +56,6 @@ post "/login" do
     create_team team_name, password
   end
   session[:team_name] = team_name
-  flash[:notice] = "Logged in"
   redirect to session[:previous_url] || "/"
 end
 
@@ -82,11 +81,14 @@ def create_team name, password
   salt = BCrypt::Engine.generate_salt
   encrypted_password = BCrypt::Engine.hash_secret(password, salt)
   write_team_data name, Team.new(name, salt, encrypted_password)
+  flash[:notice] = "Team created"
 end
 
 def log_in_as name, password
-  salt, encrypted_password = File.read(filename_for_team(name)).lines.map &:chomp
-  unless encrypted_password == BCrypt::Engine.hash_secret(password, salt)
+  team = read_team_data name
+  if team.encrypted_password == BCrypt::Engine.hash_secret(password, team.salt)
+    flash[:notice] = "Logged in"
+  else
     flash.now[:error] = "Incorrect password, or you're trying to create a team with a name that already exists."
     halt erb(:login_form)
   end
