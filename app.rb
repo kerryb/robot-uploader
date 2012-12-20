@@ -4,6 +4,7 @@ require "bcrypt"
 require "rack-flash"
 require "rubygems"
 require "sinatra"
+require "yaml"
 
 use Rack::Flash, :sweep => true
 
@@ -11,6 +12,10 @@ configure do
   set :public_folder, Proc.new { File.join(root, "static") }
   enable :sessions
 end
+
+Team = Struct.new :name, :salt, :encrypted_password, :robot_name, :scores
+
+FileUtils.mkdir_p File.join(settings.root, "teams")
 
 helpers do
   def team_name
@@ -23,7 +28,7 @@ helpers do
 end
 
 get "/" do
-  @teams = []
+  @teams = read_teams
   erb :leader_board
 end
 
@@ -34,8 +39,7 @@ end
 
 post "/new" do
   require_login
-  FileUtils.mkdir_p File.join(settings.root, "teams")
-  FileUtils.mv params[:data][:tempfile].path, File.join(settings.root, "teams", "#{session[:team_name]}.jar")
+  FileUtils.mv params[:data][:tempfile].path, filename_for_team(session[:team_name], "jar")
   flash[:notice] = "Robot uploaded"
   redirect to "/"
 end
@@ -71,27 +75,37 @@ def require_login
 end
 
 def team_exists? name
-  File.exists? File.join(settings.root, "auth", filename_for_team(name))
+  File.exists? filename_for_team(name)
 end
 
 def create_team name, password
-  FileUtils.mkdir_p File.join(settings.root, "auth")
   salt = BCrypt::Engine.generate_salt
   encrypted_password = BCrypt::Engine.hash_secret(password, salt)
-  File.open File.join(settings.root, "auth", filename_for_team(name)), "w" do |f|
-    f.puts salt
-    f.puts encrypted_password
-  end
+  write_team_data name, Team.new(name, salt, encrypted_password)
 end
 
 def log_in_as name, password
-  salt, encrypted_password = File.read(File.join(settings.root, "auth", filename_for_team(name))).lines.map &:chomp
+  salt, encrypted_password = File.read(filename_for_team(name)).lines.map &:chomp
   unless encrypted_password == BCrypt::Engine.hash_secret(password, salt)
     flash.now[:error] = "Incorrect password, or you're trying to create a team with a name that already exists."
     halt erb(:login_form)
   end
 end
 
-def filename_for_team name
-  name.gsub /[^\w]+/, "-"
+def read_teams
+  Dir[File.join settings.root, "teams", "*.yml"].map {|f| YAML.load File.read(f) }
+end
+
+def filename_for_team name, extension = "yml"
+  "#{File.join(settings.root, "teams", name.gsub(/[^\w]+/, "-"))}.#{extension}"
+end
+
+def write_team_data name, data
+  File.open filename_for_team(name), "w" do |f|
+    f.write data.to_yaml
+  end
+end
+
+def read_team_data name
+  YAML.load File.read(filename_for_team name)
 end

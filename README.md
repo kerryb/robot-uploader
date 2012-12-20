@@ -10,8 +10,13 @@ Instructions
 
     cd robot-uploader
     bundle install
+
+Then run using
+
+    shotgun app.rb
+
+To run in development mode (ie pick up changed code without restarting):
+
     shotgun app.rb
 
 Then open [http://localhost:9393/](http://localhost:9393/)
-
-Encrypted passwords are stored in `auth`, with one file per account.
