@@ -5,6 +5,7 @@ require "rack-flash"
 require "rubygems"
 require "sinatra"
 require "yaml"
+require "zippy"
 
 use Rack::Flash, :sweep => true
 
@@ -39,7 +40,7 @@ end
 
 post "/new" do
   require_login
-  FileUtils.mv params[:data][:tempfile].path, filename_for_team(session[:team_name], "jar")
+  upload_robot params[:data][:tempfile]
   flash[:notice] = "Robot uploaded"
   redirect to "/"
 end
@@ -80,17 +81,29 @@ end
 def create_team name, password
   salt = BCrypt::Engine.generate_salt
   encrypted_password = BCrypt::Engine.hash_secret(password, salt)
-  write_team_data name, Team.new(name, salt, encrypted_password)
+  write_team name, Team.new(name, salt, encrypted_password)
   flash[:notice] = "Team created"
 end
 
 def log_in_as name, password
-  team = read_team_data name
+  team = read_team name
   if team.encrypted_password == BCrypt::Engine.hash_secret(password, team.salt)
     flash[:notice] = "Logged in"
   else
     flash.now[:error] = "Incorrect password, or you're trying to create a team with a name that already exists."
     halt erb(:login_form)
+  end
+end
+
+def upload_robot data_path
+  team_name = session[:team_name]
+  jar_file = filename_for_team(team_name, "jar")
+  FileUtils.mv data_path, jar_file
+  Zippy.open(jar_file) do |zip|
+    properties = zip[zip.grep(/properties$/).first]
+    team = read_team team_name
+    team.robot_name = properties.lines.grep(/^robot.classname=/).first.split("=").last.chomp
+    write_team team_name, team
   end
 end
 
@@ -102,12 +115,12 @@ def filename_for_team name, extension = "yml"
   "#{File.join(settings.root, "teams", name.gsub(/[^\w]+/, "-"))}.#{extension}"
 end
 
-def write_team_data name, data
+def write_team name, team
   File.open filename_for_team(name), "w" do |f|
-    f.write data.to_yaml
+    f.write team.to_yaml
   end
 end
 
-def read_team_data name
+def read_team name
   YAML.load File.read(filename_for_team name)
 end
