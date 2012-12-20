@@ -1,8 +1,11 @@
 # dev hint: shotgun login.rb
 
 require "bcrypt"
+require "rack-flash"
 require "rubygems"
 require "sinatra"
+
+use Rack::Flash, :sweep => true
 
 configure do
   set :public_folder, Proc.new { File.join(root, "static") }
@@ -31,14 +34,15 @@ end
 post "/new" do
   FileUtils.mkdir_p File.join(settings.root, "robots")
   FileUtils.mv params[:data][:tempfile].path, File.join(settings.root, "robots", "#{session[:robot_name]}.jar")
-  erb 'Upload Complete'
+  flash[:notice] = "Robot uploaded"
+  redirect to "/"
 end
 
-get "/login/form" do 
+get "/login" do 
   erb :login_form
 end
 
-post "/login/attempt" do
+post "/login" do
   robot_name, password = params.values_at("robot_name", "password")
   if robot_exists? robot_name
     log_in_as robot_name, password
@@ -47,18 +51,20 @@ post "/login/attempt" do
   end
   session[:robot_name] = robot_name
   where_user_came_from = session[:previous_url] || "/"
+  flash[:notice] = "Logged in"
   redirect to where_user_came_from 
 end
 
 get "/logout" do
   session.delete(:robot_name)
-  erb %{<div class="alert alert-message">Logged out</div>}
+  flash[:notice] = "Logged out"
+  redirect to "/"
 end
 
 def require_login
   if !session[:robot_name] then
     session[:previous_url] = request["REQUEST_PATH"]
-    @error = "Sorry, you need to be logged in to do that"
+    flash.now[:error] = "Please log in"
     halt erb(:login_form)
   end
 end
@@ -80,7 +86,7 @@ end
 def log_in_as name, password
   salt, encrypted_password = File.read(File.join(settings.root, "auth", filename_for_robot(name))).lines.map &:chomp
   unless encrypted_password == BCrypt::Engine.hash_secret(password, salt)
-    @error = "Incorrect password, or you're trying to create a robot with a name that already exists."
+    flash.now[:error] = "Incorrect password, or you're trying to create a robot with a name that already exists."
     halt erb(:login_form)
   end
 end

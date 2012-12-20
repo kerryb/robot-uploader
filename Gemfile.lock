@@ -3,6 +3,9 @@ GEM
   specs:
     bcrypt-ruby (3.0.1)
     rack (1.4.1)
+    rack-flash3 (1.0.1)
+      rack
+      rack
     rack-protection (1.2.0)
       rack
     shotgun (0.9)
@@ -18,5 +21,6 @@ PLATFORMS
 
 DEPENDENCIES
   bcrypt-ruby
+  rack-flash3
   shotgun
   sinatra
