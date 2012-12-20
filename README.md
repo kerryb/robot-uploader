@@ -6,11 +6,10 @@ Based on [sinatra-bootstrap](https://github.com/pokle/sinatra-bootstrap).
 Instructions
 ===
 
-	git clone https://github.com/kerryb/robot-uploader.git
+    git clone https://github.com/kerryb/robot-uploader.git
 
-	cd robot-uploader
-  bundle install
-
-	ruby app.rb
+    cd robot-uploader
+    bundle install
+    ruby app.rb
 
 Then open [http://localhost:4567/](http://localhost:4567/)
