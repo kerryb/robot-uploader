@@ -28,6 +28,12 @@ get "/new" do
   erb :upload
 end
 
+post "/new" do
+  FileUtils.mkdir_p File.join(settings.root, "robots")
+  FileUtils.mv params[:data][:tempfile].path, File.join(settings.root, "robots", "#{session[:robot_name]}.jar")
+  erb 'Upload Complete'
+end
+
 get "/login/form" do 
   erb :login_form
 end
@@ -62,6 +68,7 @@ def robot_exists? name
 end
 
 def create_robot name, password
+  FileUtils.mkdir_p File.join(settings.root, "auth")
   salt = BCrypt::Engine.generate_salt
   encrypted_password = BCrypt::Engine.hash_secret(password, salt)
   File.open File.join(settings.root, "auth", filename_for_robot(name)), "w" do |f|
