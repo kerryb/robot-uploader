@@ -77,6 +77,10 @@ get "/logout" do
   redirect to "/"
 end
 
+get "/robots/:name" do
+  send_file File.join(settings.root, "robots", params[:name])
+end
+
 def require_login
   if !session[:team_name] then
     flash.now[:error] = "Please log in"

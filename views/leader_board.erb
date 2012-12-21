@@ -18,7 +18,11 @@
           <% end %>
           <%= team.name %>
         </td>
-        <td><%= team.robot_name ? team.robot_name.split(".").last : "" %></td>
+        <td>
+          <% if team.robot_name %>
+            <a href="/robots/<%= team.name %>.jar"><%= team.robot_name.split(".").last %></a>
+          <% end %>
+        </td>
         <% team.scores.each do |score| %>
           <td><%= score %></td>
         <% end %>
