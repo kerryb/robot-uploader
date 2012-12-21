@@ -10,10 +10,11 @@ Instructions
 
     cd robot-uploader
     bundle install
+    ln -s /robocode-dir/robots ./robots
 
 Then run using
 
-    shotgun app.rb
+    ruby app.rb
 
 To run in development mode (ie pick up changed code without restarting):
 
