@@ -1,1 +1,6 @@
+TAGS
+*.sw?
+.DS_Store
 teams
+robots
+scores

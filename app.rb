@@ -1,6 +1,7 @@
 # dev hint: shotgun login.rb
 
 require "bcrypt"
+require "csv"
 require "rack-flash"
 require "rubygems"
 require "sinatra"
@@ -14,9 +15,13 @@ configure do
   enable :sessions
 end
 
-Team = Struct.new :name, :salt, :encrypted_password, :robot_name, :scores
+Team = Struct.new :name, :salt, :encrypted_password, :robot_name, :scores do
+  def total_score
+    scores.inject 0, &:+
+  end
+end
 
-FileUtils.mkdir_p File.join(settings.root, "teams")
+FileUtils.mkdir_p %w{teams robots scores}.map {|dir| File.join(settings.root, dir) }
 
 helpers do
   def team_name
@@ -29,7 +34,8 @@ helpers do
 end
 
 get "/" do
-  @teams = read_teams
+  @scores = read_scores
+  @teams = read_teams(@scores).sort_by(&:total_score).reverse
   erb :leader_board
 end
 
@@ -40,6 +46,10 @@ end
 
 post "/new" do
   require_login
+  unless params[:data]
+    flash[:error] = "Please select a file"
+    halt erb :upload
+  end
   upload_robot params[:data][:tempfile]
   flash[:notice] = "Robot uploaded"
   redirect to "/"
@@ -57,7 +67,7 @@ post "/login" do
     create_team team_name, password
   end
   session[:team_name] = team_name
-  redirect to session[:previous_url] || "/"
+  redirect to "/"
 end
 
 get "/logout" do
@@ -68,7 +78,6 @@ end
 
 def require_login
   if !session[:team_name] then
-    session[:previous_url] = request["REQUEST_PATH"]
     flash.now[:error] = "Please log in"
     halt erb(:login_form)
   end
@@ -97,7 +106,7 @@ end
 
 def upload_robot data_path
   team_name = session[:team_name]
-  jar_file = filename_for_team(team_name, "jar")
+  jar_file = filename_for_team(team_name, "jar", "robots")
   FileUtils.mv data_path, jar_file
   Zippy.open(jar_file) do |zip|
     properties = zip[zip.grep(/properties$/).first]
@@ -107,12 +116,26 @@ def upload_robot data_path
   end
 end
 
-def read_teams
-  Dir[File.join settings.root, "teams", "*.yml"].map {|f| YAML.load File.read(f) }
+def read_scores
+  Dir[File.join settings.root, "scores", "*.csv"].map {|f|
+    Hash.new { 0 }.tap do |scores|
+      CSV.read(f).drop(3).reverse.drop(1).each_with_index.map {|row, points|
+        scores[row[1].split.first] = points
+      }
+    end
+  }
 end
 
-def filename_for_team name, extension = "yml"
-  "#{File.join(settings.root, "teams", name.gsub(/[^\w]+/, "-"))}.#{extension}"
+def read_teams scores
+  Dir[File.join settings.root, "teams", "*.yml"].map {|f|
+    YAML.load(File.read(f)).tap do |team|
+      team.scores = scores.map {|round| round[team.robot_name] }
+    end
+  }
+end
+
+def filename_for_team name, extension = "yml", dir = "teams"
+  "#{File.join(settings.root, dir, name.gsub(/[^\w]+/, "-"))}.#{extension}"
 end
 
 def write_team name, team
