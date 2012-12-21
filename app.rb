@@ -11,7 +11,6 @@ require "zippy"
 use Rack::Flash, :sweep => true
 
 configure do
-  set :public_folder, Proc.new { File.join(root, "static") }
   enable :sessions
 end
 
