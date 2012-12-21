@@ -45,7 +45,9 @@ end
 
 post "/new" do
   require_login
-  unless params[:data]
+  require "pp"
+  pp params
+  unless params[:data] && !params[:data].empty?
     flash[:error] = "Please select a file"
     halt erb :upload
   end
