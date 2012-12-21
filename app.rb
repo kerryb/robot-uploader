@@ -93,6 +93,10 @@ def team_exists? name
 end
 
 def create_team name, password
+  if name.empty? || password.empty?
+    flash[:error] = "Please supply a team name and password"
+    halt erb :login_form
+  end
   salt = BCrypt::Engine.generate_salt
   encrypted_password = BCrypt::Engine.hash_secret(password, salt)
   write_team name, Team.new(name, salt, encrypted_password)
