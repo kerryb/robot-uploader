@@ -122,7 +122,7 @@ def upload_robot data_path
 end
 
 def read_scores
-  Dir[File.join settings.root, "scores", "*.csv"].map {|f|
+  Dir[File.join settings.root, "scores", "*.csv"].sort.map {|f|
     Hash.new { 0 }.tap do |scores|
       CSV.read(f).drop(3).reverse.drop(1).each_with_index.map {|row, points|
         scores[row[1].split.first] = points + 1
